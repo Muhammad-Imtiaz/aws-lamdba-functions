@@ -12,12 +12,16 @@ def lambda_handler(event, context):
         "ml": [1, 1, 2],
     }
     
+    # Mongodb source connector
+    mongodb_cluster = "demo-mongodb-instance"
+    
     rds_instances = ["<postgres-instance-name>"]
     bastion_host_id = "<bastion-id>"
 
     eks_client = boto3.client('eks', region_name='us-east-2')
     rds_client = boto3.client('rds', region_name='us-east-2')
     bastion_client = boto3.client('ec2', region_name='us-east-2')
+    mongodb_client = boto3.client('docdb', region_name='us-east-2')
 
     action = event["type"]
 
@@ -42,6 +46,12 @@ def lambda_handler(event, context):
             for rds_instance in rds_instances:
                 print ("Going to Start RDS : ", rds_instance)
                 rds_client.start_db_instance(DBInstanceIdentifier=rds_instance)     
+        except ClientError as e:
+            print (e)
+            
+        print ("Going to Start Mongodb : ", mongodb_cluster)
+        try:
+            mongodb_client.start_db_cluster(DBClusterIdentifier=mongodb_cluster)     
         except ClientError as e:
             print (e)
   
@@ -75,8 +85,13 @@ def lambda_handler(event, context):
                 rds_client.stop_db_instance(DBInstanceIdentifier=rds_instance)  
         except ClientError as e:
             print (e)        
+       
+        print ("Going to Stop Mongodb : ", mongodb_cluster)
+        try:
+            mongodb_client.stop_db_cluster(DBClusterIdentifier=mongodb_cluster)     
+        except ClientError as e:
+            print (e)
         
-
         print ("Going to Stop Bastion host : ", bastion_host_id)  
         try:
             bastion_client.stop_instances(InstanceIds=[bastion_host_id],
